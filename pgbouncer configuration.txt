@@ -1,0 +1,264 @@
+
+Database server 
+
+
+    | Member of 
+-----------------------+--------------------------------------------------------
+----+-----------
+ aq_administrator_role | No inheritance, Cannot login                           
+   +| {}
+                       | Profile default                                        
+    | 
+ efmmonotor            | Superuser                                              
+   +| {}
+                       | Profile default                                        
+    | 
+ enterprisedb          | Superuser, Create role, Create DB, Replication, Bypass 
+RLS+| {}
+                       | Profile default                                        
+    | 
+ jeanrep               | Replication                                            
+   +| {}
+                       | Profile default                                        
+    | 
+
+efmdb=# \q
+-bash-4.2$ clear
+
+-bash-4.2$ /usr/edb/as12/bin/psql -p 5444 -d efmdb
+psql (12.10.14)
+Type "help" for help.
+
+efmdb=# \d pg_shadow
+                            View "pg_catalog.pg_shadow"
+        Column         |           Type           | Collation | Nullable | Defau
+lt 
+-----------------------+--------------------------+-----------+----------+------
+---
+ usename               | name                     |           |          | 
+ usesysid              | oid                      |           |          | 
+ usecreatedb           | boolean                  |           |          | 
+ usecreatedblink       | boolean                  |           |          | 
+ usecreatepublicdblink | boolean                  |           |          | 
+ usedroppublicdblink   | boolean                  |           |          | 
+ usesuper              | boolean                  |           |          | 
+ userepl               | boolean                  |           |          | 
+ usebypassrls          | boolean                  |           |          | 
+ passwd                | text                     | C         |          | 
+ valuntil              | timestamp with time zone |           |          | 
+ useaccountstatus      | smallint                 |           |          | 
+ uselockdate           | timestamp with time zone |           |          | 
+ usepasswordexpire     | timestamp with time zone |           |          | 
+ useconfig             | text[]                   | C         |          | 
+
+efmdb=# select usename,passwd from pg_shadow;
+   usename    |               passwd                
+--------------+-------------------------------------
+ enterprisedb | 
+ jeanrep      | md5187257b0e0a62ac9923e5d2f08a03ebd
+ efmmonotor   | md505586977752e55c66ad7aa2fc3ad2138
+(3 rows)
+
+efmdb=# alter user enterprisedb password 'postgres';
+ALTER ROLE
+efmdb=# select usename,passwd from pg_shadow;
+   usename    |               passwd                
+--------------+-------------------------------------
+ jeanrep      | md5187257b0e0a62ac9923e5d2f08a03ebd
+ efmmonotor   | md505586977752e55c66ad7aa2fc3ad2138
+ enterprisedb | md5a0637aed6903ba5760c1afdaa638fd38
+(3 rows)
+
+efmdb=# \! hosname -I
+sh: hosname: command not found
+efmdb=# \! hostname -I
+192.168.203.132 192.168.122.1 
+efmdb=# \q
+-bash-4.2$ pwd
+/var/lib/edb
+-bash-4.2$ cd /var/lib/edb/as12/data
+-bash-4.2$ vi pg_hba.conf
+-bash-4.2$ /usr/edb/as12/bin/pg_ctl -D /var/lib/edb/as12/data reload
+server signaled
+-bash-4.2$ vi pg_hba.conf
+-bash-4.2$ 
+
+
+
+
+
+pgbouncer server
+
+	Standby     192.168.203.138      UP        
+
+Allowed node host list:
+	192.168.203.132 192.168.203.133 192.168.203.138
+
+Membership coordinator: 192.168.203.132
+
+Standby priority host list:
+	192.168.203.133 192.168.203.138
+
+Promote Status:
+
+	DB Type     Address              WAL Received LSN   WAL Replayed LSN   Info
+	---------------------------------------------------------------------------
+	Primary     192.168.203.132                         0/6002A00          
+	Standby     192.168.203.133      0/6002A00          0/6002A00          
+	Standby     192.168.203.138      0/6002A00          0/6002A00          
+
+	Standby database(s) in sync with primary. It is safe to promote.
+[root@localhost efm-4.4]# chown -R efm:efm efm*
+[root@localhost efm-4.4]# clear
+
+[root@localhost efm-4.4]# cd
+[root@localhost ~]# id pgbouncer
+id: pgbouncer: no such user
+[root@localhost ~]# yum -y install edb-pgbouncer116 
+Loaded plugins: fastestmirror, langpacks
+Loading mirror speeds from cached hostfile
+epel/x86_64/metalink                                     |  11 kB     00:00     
+ * base: mirrors.gigenet.com
+ * epel: dl.fedoraproject.org
+ * extras: mirror.math.princeton.edu
+ * updates: packages.oit.ncsu.edu
+base                                                     | 3.6 kB     00:00     
+edb/7/x86_64/signature                                   |  490 B     00:00     
+edb/7/x86_64/signature                                   | 2.5 kB     00:02 !!! 
+edb-testing/7/x86_64/signature                           |  490 B     00:00     
+edb-testing/7/x86_64/signature                           | 2.5 kB     00:00 !!! 
+epel                                                     | 4.7 kB     00:00     
+extras                                                   | 2.9 kB     00:00     
+updates                                                  | 2.9 kB     00:00     
+(1/3): epel/x86_64/updateinfo                              | 1.0 MB   00:05     
+epel/x86_64/primary_db         FAILED                                           
+https://dl.fedoraproject.org/pub/epel/7/x86_64/repodata/53ecbb11a02530ff72ead5b4481b966d2bbe4d6c61e7f200e2396bb726590764-primary.sqlite.bz2: [Errno 14] HTTPS Error 404 - Not Found
+Trying other mirror.
+To address this issue please refer to the below wiki article 
+
+https://wiki.centos.org/yum-errors
+
+If above article doesn't help to resolve this issue please use https://bugs.centos.org/.
+
+(2/3): updates/7/x86_64/primary_db                         |  14 MB   00:11     
+(3/3): epel/x86_64/primary_db                              | 7.0 MB   00:05     
+Package edb-pgbouncer116-1.16.1.0-2.rhel7.x86_64 already installed and latest version
+Nothing to do
+[root@localhost ~]# id edb-pgbouncer
+id: edb-pgbouncer: no such user
+[root@localhost ~]# id edb-pgbouncer116
+id: edb-pgbouncer116: no such user
+[root@localhost ~]# cd /etc/edb/pgbouncer1.16/
+[root@localhost pgbouncer1.16]# ll
+total 28
+-rw-r--r--. 1 root         root         9402 Nov 19 06:11 edb-pgbouncer-1.16.ini
+-rwx------. 1 root         root          822 Sep 24  2020 mkauth.py
+-rw-r--r--. 2 root         root         1140 Nov 19 06:11 mkauth.pyc
+-rw-r--r--. 2 root         root         1140 Nov 19 06:11 mkauth.pyo
+-rw-------. 1 enterprisedb enterprisedb   72 Nov 19 06:11 userlist.txt
+[root@localhost pgbouncer1.16]# vi userlist.txt
+[root@localhost pgbouncer1.16]# systemctl start edb-pgbuncer-1.16.service
+Failed to start edb-pgbuncer-1.16.service: Unit not found.
+[root@localhost pgbouncer1.16]# systemctl start edb-pgbouncer-1.16.service
+[root@localhost pgbouncer1.16]# systemctl status edb-pgbouncer-1.16.service
+● edb-pgbouncer-1.16.service - A lightweight connection pooler for EPAS and PostgreSQL
+   Loaded: loaded (/usr/lib/systemd/system/edb-pgbouncer-1.16.service; disabled; vendor preset: disabled)
+   Active: active (running) since Fri 2022-02-25 12:41:31 EST; 21s ago
+  Process: 17316 ExecStart=/usr/edb/pgbouncer1.16/bin/pgbouncer -d -q ${BOUNCERCONF} (code=exited, status=0/SUCCESS)
+ Main PID: 17319 (pgbouncer)
+    Tasks: 2
+   CGroup: /system.slice/edb-pgbouncer-1.16.service
+           └─17319 /usr/edb/pgbouncer1.16/bin/pgbouncer -d -q /etc/edb/pgboun...
+
+Feb 25 12:41:30 localhost.localdomain systemd[1]: Starting A lightweight conn...
+Feb 25 12:41:31 localhost.localdomain systemd[1]: Can't open PID file /var/ru...
+Feb 25 12:41:31 localhost.localdomain systemd[1]: Started A lightweight conne...
+Hint: Some lines were ellipsized, use -l to show in full.
+[root@localhost pgbouncer1.16]# hostname -I
+192.168.203.138 192.168.122.1 
+[root@localhost pgbouncer1.16]# ps -ef|grep pgbouncer
+enterpr+  17319      1  0 12:41 ?        00:00:00 /usr/edb/pgbouncer1.16/bin/pgbouncer -d -q /etc/edb/pgbouncer1.16/edb-pgbouncer-1.16.ini
+root      18462  10542  0 13:03 pts/0    00:00:00 grep --color=auto pgbouncer
+[root@localhost pgbouncer1.16]# ll
+total 28
+-rw-r--r--. 1 root         root         9402 Nov 19 06:11 edb-pgbouncer-1.16.ini
+-rwx------. 1 root         root          822 Sep 24  2020 mkauth.py
+-rw-r--r--. 2 root         root         1140 Nov 19 06:11 mkauth.pyc
+-rw-r--r--. 2 root         root         1140 Nov 19 06:11 mkauth.pyo
+-rw-------. 1 enterprisedb enterprisedb  152 Feb 25 12:39 userlist.txt
+[root@localhost pgbouncer1.16]# vi edb-pgbouncer-1.16.ini
+[root@localhost pgbouncer1.16]# systemctl stop edb-pgbouncer-1.16.service
+[root@localhost pgbouncer1.16]# systemctl start edb-pgbouncer-1.16.service
+Job for edb-pgbouncer-1.16.service failed. See "systemctl status edb-pgbouncer-1.16.service" and "journalctl -xe" for details.
+[root@localhost pgbouncer1.16]# vi edb-pgbouncer-1.16.ini
+[root@localhost pgbouncer1.16]# systemctl start edb-pgbouncer-1.16.service
+[root@localhost pgbouncer1.16]# 
+
+
+
+
+
+
+
+application  server
+
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ vi pg_hba.conf
+-bash-4.2$ /usr/edb/as12/bin/pg_ctl -D /var/lib/edb/as12/data reload
+server signaled
+-bash-4.2$ psql -h 192.168.203.138 -p 6432 -U enterprisedb -d postgres
+psql: error: could not connect to server: Connection refused
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ /usr/edb/as12/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d postgres
+psql: error: could not connect to server: Connection refused
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ /usr/edb/as12/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d efmdb
+psql: error: could not connect to server: Connection refused
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ /usr/edb/pgbouncer1.16/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d efmdb
+-bash: /usr/edb/pgbouncer1.16/bin/psql: No such file or directory
+-bash-4.2$ clear
+
+-bash-4.2$ vi pg_hba.conf
+-bash-4.2$ /usr/edb/as12/bin/pg_ctl -D /var/lib/edb/as12/data reload
+server signaled
+-bash-4.2$ /usr/edb/as12/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d efmdb
+psql: error: could not connect to server: Connection refused
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ vi postgresql.conf
+-bash-4.2$ vi pg_hba.conf
+-bash-4.2$ /usr/edb/as12/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d efmdb
+psql: error: could not connect to server: Connection refused
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ /usr/edb/as12/bin/pg_ctl -D /var/lib/edb/as12/data reload
+server signaled
+-bash-4.2$ /usr/edb/as12/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d efmdb
+psql: error: could not connect to server: Connection refused
+	Is the server running on host "192.168.203.138" and accepting
+	TCP/IP connections on port 6432?
+-bash-4.2$ /usr/edb/as12/bin/psql -h 192.168.203.138 -p 6432 -U enterprisedb -d efmdb
+Password for user enterprisedb: 
+psql (12.10.14)
+Type "help" for help.
+
+efmdb=# show help
+efmdb-# ;
+ERROR:  unrecognized configuration parameter "help"
+efmdb=# show pools;
+ERROR:  unrecognized configuration parameter "pools"
+efmdb=# help
+You are using psql, the command-line interface to PostgreSQL.
+Type:  \copyright for distribution terms
+       \h for help with SQL commands
+       \? for help with psql commands
+       \g or terminate with semicolon to execute query
+       \q to quit
+efmdb=# 
+
+
